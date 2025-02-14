@@ -58,6 +58,52 @@ const WhitepaperPage: React.FC = () => {
         </section>
 
         <section className="mb-8">
+          <h2 className="text-4xl font-bold mb-4">🏅 Badge Legend</h2>
+          <table className="w-full border-collapse border border-gray-700 text-lg">
+            <thead>
+              <tr className="bg-purple-700">
+                <th className="border border-gray-600 p-2">Badge</th>
+                <th className="border border-gray-600 p-2">Criteria</th>
+                <th className="border border-gray-600 p-2">Icon</th>
+                <th className="border border-gray-600 p-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-gray-600 p-2">🧙‍♂️ Chaos Prophet</td>
+                <td className="border border-gray-600 p-2">Top voted prediction of the month</td>
+                <td className="border border-gray-600 p-2">🧙‍♂️</td>
+                <td className="border border-gray-600 p-2">Foresees the future of Chaos Coin</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-600 p-2">🎭 Memelord</td>
+                <td className="border border-gray-600 p-2">Prediction with 50+ votes</td>
+                <td className="border border-gray-600 p-2">🎭</td>
+                <td className="border border-gray-600 p-2">Meme-worthy prediction success</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-600 p-2">🌟 Rising Star</td>
+                <td className="border border-gray-600 p-2">30+ votes in the first month</td>
+                <td className="border border-gray-600 p-2">🌟</td>
+                <td className="border border-gray-600 p-2">Fast-start predictor</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-600 p-2">🐳 Whale Whisperer</td>
+                <td className="border border-gray-600 p-2">Predictions about whales/crypto</td>
+                <td className="border border-gray-600 p-2">🐳</td>
+                <td className="border border-gray-600 p-2">Masters of market prediction</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-600 p-2">🔥 Hot Streak</td>
+                <td className="border border-gray-600 p-2">3+ predictions each with 40+ votes</td>
+                <td className="border border-gray-600 p-2">🔥</td>
+                <td className="border border-gray-600 p-2">Consistent, high-impact predictor</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section className="mb-8">
           <h2 className="text-4xl font-bold mb-4">📞 Join the Chaos</h2>
           <p className="text-lg leading-relaxed">
             Be part of the most unpredictable journey in crypto. Join our Discord, follow us on Twitter, and spread the chaos!

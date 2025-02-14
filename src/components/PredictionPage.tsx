@@ -9,14 +9,14 @@ const PredictionPage: React.FC = () => {
   const [balance, setBalance] = useState(0);
   const [userPredictions, setUserPredictions] = useState<Record<string, string[]>>({});
   const [newPrediction, setNewPrediction] = useState('');
-  const [isEligible, setIsEligible] = useState(false);
+  const [isEligible, setIsEligible] = useState(true);
+  
 
   const categories = [
     "MMA/UFC", "Football", "Music", "Film", "Crypto/Finance", "Gaming", "Tech", "Space Exploration", "Pop Culture", "Food", "F1"
   ];
 
   const CHAOS_TOKEN_MINT = "YourSolanaTokenMintAddress";
-  const MIN_REQUIRED_BALANCE = 0;
 
   const connectWallet = async () => {
     const solana = (window as any).solana;
@@ -27,7 +27,6 @@ const PredictionPage: React.FC = () => {
       const balanceLamports = await connection.getBalance(new PublicKey(response.publicKey));
       const balanceSol = balanceLamports / 1_000_000_000;
       setBalance(balanceSol);
-      setIsEligible(balanceSol >= MIN_REQUIRED_BALANCE);
     } else {
       alert('Phantom Wallet not found. Please install it.');
     }
@@ -37,7 +36,6 @@ const PredictionPage: React.FC = () => {
     try {
       const response = await fetch('/predictions.json');
       const predictions = await response.json();
-      //const categoryPredictions = predictions[category] || [];
       const categoryPredictions = [
         ...(predictions[category] || []),
         ...(userPredictions[category] || [])
@@ -51,7 +49,7 @@ const PredictionPage: React.FC = () => {
   };
 
   const handlePredictionSubmit = () => {
-    if (!newPrediction || !isEligible) return;
+    if (!newPrediction) return;
 
     setUserPredictions((prev) => {
       const updated = { ...prev };
@@ -61,6 +59,16 @@ const PredictionPage: React.FC = () => {
       updated[category].push(newPrediction);
       return updated;
     });
+
+    // Here you would typically send the new prediction to the server for others to vote on
+    fetch('/api/predictions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, prediction: newPrediction, account })
+    })
+    .then(response => response.json())
+    .then(data => console.log('Prediction submitted:', data))
+    .catch(error => console.error('Error submitting prediction:', error));
 
     setNewPrediction('');
   };
@@ -78,10 +86,10 @@ const PredictionPage: React.FC = () => {
           🔮 Predict Chaos
         </button>
         {prediction && <p className="mt-6 text-2xl">{prediction}</p>}
-  
+
         <h2 className="text-5xl font-bold mt-12 mb-6">🏆 Top Chaos Predictors</h2>
         <Leaderboard />
-  
+
         <h2 className="text-5xl font-bold mt-12 mb-6">💳 Connect Wallet</h2>
         <button className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-4 px-6 rounded-xl" onClick={connectWallet}>
           🚀 Connect Wallet
@@ -90,11 +98,10 @@ const PredictionPage: React.FC = () => {
           <div className="mt-4">
             <p>Connected Wallet: {account}</p>
             <p>Balance: {balance} SOL</p>
-            <p>{isEligible ? "✅ Eligible to submit predictions!" : "❌ Not enough SOL tokens"}</p>
           </div>
         )}
       </div>
-  
+
       {/* User Prediction Submission Section */}
       <div className="p-12 text-center bg-gray-700">
         <h2 className="text-5xl font-bold mb-6">💡 Submit Your Prediction</h2>
@@ -113,18 +120,13 @@ const PredictionPage: React.FC = () => {
           placeholder="Enter your chaotic prediction"
           value={newPrediction}
           onChange={(e) => setNewPrediction(e.target.value)}
-          disabled={!isEligible}
         />
         <button
-          className={`ml-4 py-3 px-6 rounded-xl font-bold ${isEligible ? 'bg-blue-500 hover:bg-blue-400 text-white' : 'bg-gray-500 cursor-not-allowed'}`}
+          className="ml-4 py-3 px-6 rounded-xl font-bold bg-blue-500 hover:bg-blue-400 text-white"
           onClick={handlePredictionSubmit}
-          disabled={!isEligible}
         >
           ➕ Submit Prediction
         </button>
-        {!isEligible && (
-          <p className="mt-3 text-red-400">You need at least {MIN_REQUIRED_BALANCE} SOL to submit predictions.</p>
-        )}
       </div>
     </>
   );
