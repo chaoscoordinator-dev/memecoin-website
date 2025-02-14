@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 
 interface Prediction {
   id: string;
@@ -23,12 +24,89 @@ const categories = [
   "Food",
 ];
 
+const CHAOS_TOKEN_MINT = "YourChaosTokenMintAddress";
+const MIN_REQUIRED_BALANCE = 100; // Minimum CHAOS balance to vote
+
 const CommunityLeaderboard: React.FC = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("MMA/UFC");
+  const [votedWallets, setVotedWallets] = useState<Record<string, Set<string>>>({});
+  const [wallet, setWallet] = useState<string | null>(null);
 
+  // Connect Phantom wallet
+  const connectWallet = async () => {
+    const solana = (window as any).solana;
+    if (solana && solana.isPhantom) {
+      try {
+        const response = await solana.connect();
+        setWallet(response.publicKey.toString());
+        alert(`✅ Wallet connected: ${response.publicKey.toString()}`);
+      } catch (error) {
+        console.error("Wallet connection failed:", error);
+      }
+    } else {
+      alert("⚠️ Phantom wallet not found. Please install it.");
+    }
+  };
+
+  // Check CHAOS token balance
+  const checkChaosBalance = async (walletAddress: string) => {
+    const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
+    const balance = await connection.getBalance(new PublicKey(walletAddress));
+    const solBalance = balance / 1_000_000_000;
+    return solBalance >= MIN_REQUIRED_BALANCE;
+  };
+
+  // Handle voting with checks
+  const handleVote = async (id: string) => {
+    if (!wallet) {
+      alert("❌ Connect your wallet first!");
+      return;
+    }
+
+    // Check token balance
+    const eligible = await checkChaosBalance(wallet);
+    if (!eligible) {
+      alert('❌ You need at least 100 CHAOS tokens to vote!');
+      return;
+    }
+
+    // Check if wallet has already voted
+    if (votedWallets[id]?.has(wallet)) {
+      alert('⚠️ You have already voted for this prediction!');
+      return;
+    }
+
+    // Update votes
+    setPredictions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, votes: p.votes + 1 } : p))
+    );
+
+    // Track that this wallet voted
+    setVotedWallets((prev) => {
+      const updated = { ...prev };
+      if (!updated[id]) updated[id] = new Set();
+      updated[id].add(wallet);
+      return updated;
+    });
+
+    alert(`🎉 Voted successfully for prediction ID: ${id}!`);
+  };
+
+  // Reset votes monthly
   useEffect(() => {
-    // Simulated initial predictions
+    const currentMonth = new Date().getMonth();
+    const lastReset = localStorage.getItem('lastResetMonth');
+
+    if (lastReset !== String(currentMonth)) {
+      setPredictions((prev) => prev.map((p) => ({ ...p, votes: 0 })));
+      localStorage.setItem('lastResetMonth', String(currentMonth));
+      alert('🗓️ Leaderboard has been reset for the new month!');
+    }
+  }, []);
+
+  // Simulate predictions
+  useEffect(() => {
     const initialPredictions: Prediction[] = [
       { id: "1", text: "Chaos Coin becomes the currency of Mars!", category: "Space Exploration", votes: 35, submittedBy: "7Gh1...3HqT" },
       { id: "2", text: "Elon Musk tweets about Chaos Coin!", category: "Tech", votes: 42, submittedBy: "4Tx2...4XyZ" },
@@ -38,12 +116,6 @@ const CommunityLeaderboard: React.FC = () => {
     setPredictions(initialPredictions);
   }, []);
 
-  const handleVote = (id: string) => {
-    setPredictions((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, votes: p.votes + 1 } : p))
-    );
-  };
-
   const filteredPredictions = predictions
     .filter((p) => p.category === selectedCategory)
     .sort((a, b) => b.votes - a.votes);
@@ -51,6 +123,17 @@ const CommunityLeaderboard: React.FC = () => {
   return (
     <div className="p-6 bg-gray-900 text-white min-h-screen">
       <h2 className="text-4xl font-bold mb-6 text-center">🏆 Community-Powered Leaderboard 🏆</h2>
+
+      {/* Wallet Connect */}
+      <div className="text-center mb-6">
+        <button
+          className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-xl"
+          onClick={connectWallet}
+        >
+          🚀 Connect Wallet
+        </button>
+        {wallet && <p className="mt-3">Connected: {wallet}</p>}
+      </div>
 
       {/* Category Selection */}
       <div className="mb-4 text-center">
