@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 
-interface Predictor {
-  wallet: string;
-  predictions: number;
-  correct: number;
-  accuracy: number;
+interface Prediction {
+  id: string;
+  text: string;
   category: string;
-  lastPrediction: string;
+  votes: number;
+  submittedBy: string;
 }
 
 const categories = [
@@ -24,29 +23,34 @@ const categories = [
   "Food",
 ];
 
-const Leaderboard: React.FC = () => {
-  const [leaderboard, setLeaderboard] = useState<Predictor[]>([]);
+const CommunityLeaderboard: React.FC = () => {
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("MMA/UFC");
-  const [sortBy, setSortBy] = useState<"accuracy" | "predictions">("accuracy");
 
   useEffect(() => {
-    // Simulate fetching leaderboard data
-    const sampleData: Predictor[] = [
-      { wallet: "7Gh1...3HqT", predictions: 30, correct: 20, accuracy: 66.7, category: "Football", lastPrediction: "2025-02-14" },
-      { wallet: "4Tx2...4XyZ", predictions: 50, correct: 35, accuracy: 70.0, category: "MMA/UFC", lastPrediction: "2025-02-13" },
-      { wallet: "1Ab3...5CdE", predictions: 40, correct: 28, accuracy: 70.0, category: "Music", lastPrediction: "2025-02-12" },
-      { wallet: "5Fx7...6GfH", predictions: 25, correct: 18, accuracy: 72.0, category: "Film", lastPrediction: "2025-02-11" }
+    // Simulated initial predictions
+    const initialPredictions: Prediction[] = [
+      { id: "1", text: "Chaos Coin becomes the currency of Mars!", category: "Space Exploration", votes: 35, submittedBy: "7Gh1...3HqT" },
+      { id: "2", text: "Elon Musk tweets about Chaos Coin!", category: "Tech", votes: 42, submittedBy: "4Tx2...4XyZ" },
+      { id: "3", text: "McGregor partners with Chaos Coin!", category: "MMA/UFC", votes: 50, submittedBy: "1Ab3...5CdE" },
+      { id: "4", text: "Taylor Swift releases ChaosCoin Anthem!", category: "Music", votes: 28, submittedBy: "5Fx7...6GfH" }
     ];
-    setLeaderboard(sampleData);
+    setPredictions(initialPredictions);
   }, []);
 
-  const filteredLeaderboard = leaderboard
+  const handleVote = (id: string) => {
+    setPredictions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, votes: p.votes + 1 } : p))
+    );
+  };
+
+  const filteredPredictions = predictions
     .filter((p) => p.category === selectedCategory)
-    .sort((a, b) => (sortBy === "accuracy" ? b.accuracy - a.accuracy : b.predictions - a.predictions));
+    .sort((a, b) => b.votes - a.votes);
 
   return (
     <div className="p-6 bg-gray-900 text-white min-h-screen">
-      <h2 className="text-4xl font-bold mb-6 text-center">🏆 Chaos Predictor Leaderboard 🏆</h2>
+      <h2 className="text-4xl font-bold mb-6 text-center">🏆 Community-Powered Leaderboard 🏆</h2>
 
       {/* Category Selection */}
       <div className="mb-4 text-center">
@@ -62,47 +66,39 @@ const Leaderboard: React.FC = () => {
         </select>
       </div>
 
-      {/* Sort Selection */}
-      <div className="mb-6 text-center">
-        <label className="mr-4">Sort by:</label>
-        <select
-          className="p-2 text-black"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as "accuracy" | "predictions")}
-        >
-          <option value="accuracy">Accuracy (%)</option>
-          <option value="predictions">Total Predictions</option>
-        </select>
-      </div>
-
       {/* Leaderboard Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-center border border-gray-700">
           <thead className="bg-purple-700">
             <tr>
               <th className="py-2 px-4">Rank</th>
-              <th className="py-2 px-4">Wallet</th>
-              <th className="py-2 px-4">Total Predictions</th>
-              <th className="py-2 px-4">Correct Predictions</th>
-              <th className="py-2 px-4">Accuracy (%)</th>
-              <th className="py-2 px-4">Last Prediction</th>
+              <th className="py-2 px-4">Prediction</th>
+              <th className="py-2 px-4">Submitted By</th>
+              <th className="py-2 px-4">Votes</th>
+              <th className="py-2 px-4">Vote</th>
             </tr>
           </thead>
           <tbody>
-            {filteredLeaderboard.length > 0 ? (
-              filteredLeaderboard.map((user, index) => (
-                <tr key={user.wallet} className="border-b border-gray-600 hover:bg-gray-800">
+            {filteredPredictions.length > 0 ? (
+              filteredPredictions.map((p, index) => (
+                <tr key={p.id} className="border-b border-gray-600 hover:bg-gray-800">
                   <td className="py-2 px-4">{index + 1}</td>
-                  <td className="py-2 px-4">{user.wallet}</td>
-                  <td className="py-2 px-4">{user.predictions}</td>
-                  <td className="py-2 px-4">{user.correct}</td>
-                  <td className="py-2 px-4">{user.accuracy.toFixed(2)}</td>
-                  <td className="py-2 px-4">{user.lastPrediction}</td>
+                  <td className="py-2 px-4">{p.text}</td>
+                  <td className="py-2 px-4">{p.submittedBy}</td>
+                  <td className="py-2 px-4">{p.votes}</td>
+                  <td className="py-2 px-4">
+                    <button
+                      className="bg-green-500 hover:bg-green-400 text-black font-bold py-2 px-4 rounded-lg"
+                      onClick={() => handleVote(p.id)}
+                    >
+                      👍 Vote
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="py-4 text-gray-400">No predictions yet for this category.</td>
+                <td colSpan={5} className="py-4 text-gray-400">No predictions yet for this category.</td>
               </tr>
             )}
           </tbody>
@@ -111,10 +107,10 @@ const Leaderboard: React.FC = () => {
 
       {/* Call to Action */}
       <div className="text-center mt-6">
-        <p className="text-xl">Think you can predict better? Submit your prediction today! 🔮</p>
+        <p className="text-xl">Vote for your favorite predictions and help decide the future of Chaos Coin! 🔮</p>
       </div>
     </div>
   );
 };
 
-export default Leaderboard;
+export default CommunityLeaderboard;
