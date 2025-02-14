@@ -22,6 +22,7 @@ const categories = [
 ];
 
 const REWARD_AMOUNT = 100;
+const MIN_REQUIRED_BALANCE = 0.1;
 
 // Environment variable guard
 const getEnvVar = (key: string): string => {
@@ -35,6 +36,9 @@ const getEnvVar = (key: string): string => {
 const CommunityLeaderboard: React.FC = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("MMA/UFC");
+  const [wallet, setWallet] = useState<string | null>(null);
+  const [hasChaosTokens, setHasChaosTokens] = useState(false);
+  const [votedWallets, setVotedWallets] = useState<Record<string, Set<string>>>({});
 
   const decryptPrivateKey = () => {
     const encryptedKey = getEnvVar("ENCRYPTED_PRIVATE_KEY");
@@ -64,35 +68,63 @@ const CommunityLeaderboard: React.FC = () => {
     }
   };
 
+  const checkChaosBalance = async (walletAddress: string) => {
+    const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
+    const balance = await connection.getBalance(new PublicKey(walletAddress));
+    const solBalance = balance / 1_000_000_000;
+    console.log(`SOL balance: ${solBalance}`);
+    const eligible = solBalance >= MIN_REQUIRED_BALANCE;
+    setHasChaosTokens(eligible);
+    return eligible;
+  };
+
+  const handleVote = (id: string) => {
+    if (!wallet) {
+      alert("❌ Connect your wallet first!");
+      return;
+    }
+
+    if (!hasChaosTokens) {
+      alert("⚠️ You need at least 0.1 CHAOS tokens to vote!");
+      return;
+    }
+
+    if (votedWallets[id]?.has(wallet)) {
+      alert("⚠️ You have already voted for this prediction!");
+      return;
+    }
+
+    setPredictions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, votes: p.votes + 1 } : p))
+    );
+
+    setVotedWallets((prev) => {
+      const updated = { ...prev };
+      if (!updated[id]) updated[id] = new Set();
+      updated[id].add(wallet);
+      return updated;
+    });
+
+    alert(`🎉 Voted successfully for prediction ID: ${id}!`);
+  };
+
   const calculateBadges = (prediction: Prediction): string[] => {
     const badges: string[] = [];
-
     const maxVotes = Math.max(...predictions.map((p) => p.votes));
-    if (prediction.votes === maxVotes) {
-      badges.push('Chaos Prophet 🧙‍♂️');
-    }
-
-    if (prediction.votes >= 50) {
-      badges.push('Memelord 🎭');
-    }
-
+    if (prediction.votes === maxVotes) badges.push('Chaos Prophet 🧙‍♂️');
+    if (prediction.votes >= 50) badges.push('Memelord 🎭');
     const predictionDate = new Date(prediction.id);
     const currentDate = new Date();
     const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
     if ((currentDate.getTime() - predictionDate.getTime()) < oneMonthMs && prediction.votes >= 30) {
       badges.push('Rising Star 🌟');
     }
-
     if (prediction.text.toLowerCase().includes('whale') || prediction.text.toLowerCase().includes('crypto')) {
       badges.push('Whale Whisperer 🐳');
     }
-
     const userPredictions = predictions.filter(p => p.submittedBy === prediction.submittedBy);
     const hotStreak = userPredictions.filter(p => p.votes >= 40).length >= 3;
-    if (hotStreak) {
-      badges.push('Hot Streak 🔥');
-    }
-
+    if (hotStreak) badges.push('Hot Streak 🔥');
     return badges;
   };
 
@@ -107,17 +139,10 @@ const CommunityLeaderboard: React.FC = () => {
         setPredictions((prev) =>
           prev.map((p) => (p.id === winner.id ? { ...p, isWinner: true } : p))
         );
-
-        confetti({
-          particleCount: 200,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-
+        confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
         localStorage.setItem('winner', JSON.stringify(winner));
         sendTokenReward(winner.submittedBy);
         alert(`🎉 Prediction of the Month: "${winner.text}" by ${winner.submittedBy}!`);
-
         setPredictions((prev) => prev.map((p) => ({ ...p, votes: 0 })));
         localStorage.setItem('lastResetMonth', String(currentMonth));
       }
@@ -126,14 +151,10 @@ const CommunityLeaderboard: React.FC = () => {
 
   useEffect(() => {
     const badgeHistory = JSON.parse(localStorage.getItem('badgeHistory') || '{}');
-
     predictions.forEach((p) => {
       const badges = calculateBadges(p);
       if (badges.length > 0) {
-        if (!badgeHistory[p.submittedBy]) {
-          badgeHistory[p.submittedBy] = [];
-        }
-
+        if (!badgeHistory[p.submittedBy]) badgeHistory[p.submittedBy] = [];
         badges.forEach((badge) => {
           if (!badgeHistory[p.submittedBy].includes(badge)) {
             badgeHistory[p.submittedBy].push(badge);
@@ -141,7 +162,6 @@ const CommunityLeaderboard: React.FC = () => {
         });
       }
     });
-
     localStorage.setItem('badgeHistory', JSON.stringify(badgeHistory));
   }, [predictions]);
 
@@ -161,6 +181,26 @@ const CommunityLeaderboard: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-900 text-white min-h-screen">
+      <div className="text-center mb-6">
+        <button
+          className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-xl"
+          onClick={async () => {
+            const solana = (window as any).solana;
+            if (solana && solana.isPhantom) {
+              const response = await solana.connect();
+              setWallet(response.publicKey.toString());
+              alert(`✅ Wallet connected: ${response.publicKey.toString()}`);
+              checkChaosBalance(response.publicKey.toString());
+            } else {
+              alert("⚠️ Phantom wallet not found. Please install it.");
+            }
+          }}
+        >
+          🚀 Connect Wallet
+        </button>
+        {wallet && <p className="mt-3">Connected: {wallet}</p>}
+      </div>
+
       <h2 className="text-4xl font-bold mb-6 text-center animate-bounce">🏆 Community-Powered Leaderboard 🏆</h2>
 
       <div className="mb-4 text-center">
@@ -185,6 +225,7 @@ const CommunityLeaderboard: React.FC = () => {
               <th className="py-2 px-4">Submitted By</th>
               <th className="py-2 px-4">Votes</th>
               <th className="py-2 px-4">Badges</th>
+              <th className="py-2 px-4">Vote</th>
               <th className="py-2 px-4">Status</th>
             </tr>
           </thead>
@@ -205,13 +246,24 @@ const CommunityLeaderboard: React.FC = () => {
                         </span>
                       )) : '—'}
                     </td>
+                    <td className="py-2 px-4">
+                      <button
+                        className={`px-4 py-2 font-bold text-white rounded ${
+                          wallet && hasChaosTokens ? "bg-green-500 hover:bg-green-400" : "bg-gray-500 cursor-not-allowed"
+                        }`}
+                        disabled={!wallet || !hasChaosTokens}
+                        onClick={() => handleVote(p.id)}
+                      >
+                        👍 Vote
+                      </button>
+                    </td>
                     <td className="py-2 px-4">{p.isWinner ? "🏆 Winner" : "🏃 Ongoing"}</td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={6} className="py-4 text-gray-400">No predictions yet for this category.</td>
+                <td colSpan={7} className="py-4 text-gray-400">No predictions yet for this category.</td>
               </tr>
             )}
           </tbody>
