@@ -51,7 +51,7 @@ const CommunityLeaderboard: React.FC = () => {
 
   // Check CHAOS token balance
   const checkChaosBalance = async (walletAddress: string) => {
-    const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
+    const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!, 'confirmed');
     const balance = await connection.getBalance(new PublicKey(walletAddress));
     const solBalance = balance / 1_000_000_000;
     return solBalance >= MIN_REQUIRED_BALANCE;
