@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Connection, PublicKey, clusterApiUrl, Transaction, SystemProgram, Keypair } from '@solana/web3.js';
+import CryptoJS from "crypto-js";
 
 interface Prediction {
   id: string;
@@ -9,101 +10,80 @@ interface Prediction {
   category: string;
   votes: number;
   submittedBy: string;
+  isWinner?: boolean;
 }
 
 const categories = [
-  "MMA/UFC",
-  "Football",
-  "Music",
-  "Film",
-  "Crypto/Finance",
-  "Gaming",
-  "Tech",
-  "Space Exploration",
-  "Pop Culture",
-  "Food",
+  "MMA/UFC", "Football", "Music", "Film", 
+  "Crypto/Finance", "Gaming", "Tech", 
+  "Space Exploration", "Pop Culture", "Food"
 ];
 
-const CHAOS_TOKEN_MINT = "YourChaosTokenMintAddress";
-const MIN_REQUIRED_BALANCE = 100; // Minimum CHAOS balance to vote
+const REWARD_AMOUNT = 100;
+
+// Environment variable guard
+const getEnvVar = (key: string): string => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing environment variable: ${key}`);
+  }
+  return value;
+};
 
 const CommunityLeaderboard: React.FC = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("MMA/UFC");
-  const [votedWallets, setVotedWallets] = useState<Record<string, Set<string>>>({});
-  const [wallet, setWallet] = useState<string | null>(null);
 
-  // Connect Phantom wallet
-  const connectWallet = async () => {
-    const solana = (window as any).solana;
-    if (solana && solana.isPhantom) {
-      try {
-        const response = await solana.connect();
-        setWallet(response.publicKey.toString());
-        alert(`✅ Wallet connected: ${response.publicKey.toString()}`);
-      } catch (error) {
-        console.error("Wallet connection failed:", error);
-      }
-    } else {
-      alert("⚠️ Phantom wallet not found. Please install it.");
+  const decryptPrivateKey = () => {
+    const encryptedKey = getEnvVar("ENCRYPTED_PRIVATE_KEY");
+    const passphrase = getEnvVar("KEY_PASSPHRASE");
+    const bytes = CryptoJS.AES.decrypt(encryptedKey, passphrase);
+    const decryptedKey = bytes.toString(CryptoJS.enc.Utf8);
+    return Uint8Array.from(JSON.parse(decryptedKey));
+  };
+
+  const sendTokenReward = async (winnerWallet: string) => {
+    try {
+      const connection = new Connection(getEnvVar("NEXT_PUBLIC_SOLANA_RPC_URL"), 'confirmed');
+      const senderKeypair = Keypair.fromSecretKey(decryptPrivateKey());
+      const recipientPublicKey = new PublicKey(winnerWallet);
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: senderKeypair.publicKey,
+          toPubkey: recipientPublicKey,
+          lamports: REWARD_AMOUNT * 1_000_000_000,
+        })
+      );
+      const signature = await connection.sendTransaction(transaction, [senderKeypair]);
+      alert(`🎯 ${REWARD_AMOUNT} CHAOS tokens sent to ${winnerWallet}!\nTransaction: ${signature}`);
+    } catch (error) {
+      console.error("Failed to send reward:", error);
+      alert("⚠️ Failed to send reward. Check console for details.");
     }
   };
 
-  // Check CHAOS token balance
-  const checkChaosBalance = async (walletAddress: string) => {
-    const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!, 'confirmed');
-    const balance = await connection.getBalance(new PublicKey(walletAddress));
-    const solBalance = balance / 1_000_000_000;
-    return solBalance >= MIN_REQUIRED_BALANCE;
-  };
-
-  // Handle voting with checks
-  const handleVote = async (id: string) => {
-    if (!wallet) {
-      alert("❌ Connect your wallet first!");
-      return;
-    }
-
-    // Check token balance
-    const eligible = await checkChaosBalance(wallet);
-    if (!eligible) {
-      alert('❌ You need at least 100 CHAOS tokens to vote!');
-      return;
-    }
-
-    // Check if wallet has already voted
-    if (votedWallets[id]?.has(wallet)) {
-      alert('⚠️ You have already voted for this prediction!');
-      return;
-    }
-
-    // Update votes
-    setPredictions((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, votes: p.votes + 1 } : p))
-    );
-
-    // Track that this wallet voted
-    setVotedWallets((prev) => {
-      const updated = { ...prev };
-      if (!updated[id]) updated[id] = new Set();
-      updated[id].add(wallet);
-      return updated;
-    });
-
-    alert(`🎉 Voted successfully for prediction ID: ${id}!`);
-  };
-
-  // Reset votes monthly
+  // Determine monthly winner
   useEffect(() => {
     const currentMonth = new Date().getMonth();
     const lastReset = localStorage.getItem('lastResetMonth');
 
     if (lastReset !== String(currentMonth)) {
-      setPredictions((prev) => prev.map((p) => ({ ...p, votes: 0 })));
-      localStorage.setItem('lastResetMonth', String(currentMonth));
-      alert('🗓️ Leaderboard has been reset for the new month!');
+      const winner = predictions.reduce((max, p) => (p.votes > max.votes ? p : max), predictions[0]);
+
+      if (winner) {
+        setPredictions((prev) =>
+          prev.map((p) => (p.id === winner.id ? { ...p, isWinner: true } : p))
+        );
+
+        localStorage.setItem('winner', JSON.stringify(winner));
+        sendTokenReward(winner.submittedBy);
+        alert(`🎉 Prediction of the Month: "${winner.text}" by ${winner.submittedBy}!`);
+
+        setPredictions((prev) => prev.map((p) => ({ ...p, votes: 0 })));
+        localStorage.setItem('lastResetMonth', String(currentMonth));
+      }
     }
-  }, []);
+  }, [predictions]);
 
   // Simulate predictions
   useEffect(() => {
@@ -124,18 +104,6 @@ const CommunityLeaderboard: React.FC = () => {
     <div className="p-6 bg-gray-900 text-white min-h-screen">
       <h2 className="text-4xl font-bold mb-6 text-center">🏆 Community-Powered Leaderboard 🏆</h2>
 
-      {/* Wallet Connect */}
-      <div className="text-center mb-6">
-        <button
-          className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-xl"
-          onClick={connectWallet}
-        >
-          🚀 Connect Wallet
-        </button>
-        {wallet && <p className="mt-3">Connected: {wallet}</p>}
-      </div>
-
-      {/* Category Selection */}
       <div className="mb-4 text-center">
         <label className="mr-4">Select Category:</label>
         <select
@@ -149,7 +117,6 @@ const CommunityLeaderboard: React.FC = () => {
         </select>
       </div>
 
-      {/* Leaderboard Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-center border border-gray-700">
           <thead className="bg-purple-700">
@@ -158,25 +125,18 @@ const CommunityLeaderboard: React.FC = () => {
               <th className="py-2 px-4">Prediction</th>
               <th className="py-2 px-4">Submitted By</th>
               <th className="py-2 px-4">Votes</th>
-              <th className="py-2 px-4">Vote</th>
+              <th className="py-2 px-4">Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredPredictions.length > 0 ? (
               filteredPredictions.map((p, index) => (
-                <tr key={p.id} className="border-b border-gray-600 hover:bg-gray-800">
+                <tr key={p.id} className={`border-b border-gray-600 hover:bg-gray-800 ${p.isWinner ? 'bg-yellow-400 text-black' : ''}`}>
                   <td className="py-2 px-4">{index + 1}</td>
                   <td className="py-2 px-4">{p.text}</td>
                   <td className="py-2 px-4">{p.submittedBy}</td>
                   <td className="py-2 px-4">{p.votes}</td>
-                  <td className="py-2 px-4">
-                    <button
-                      className="bg-green-500 hover:bg-green-400 text-black font-bold py-2 px-4 rounded-lg"
-                      onClick={() => handleVote(p.id)}
-                    >
-                      👍 Vote
-                    </button>
-                  </td>
+                  <td className="py-2 px-4">{p.isWinner ? "🏆 Winner" : "🏃 Ongoing"}</td>
                 </tr>
               ))
             ) : (
@@ -188,9 +148,20 @@ const CommunityLeaderboard: React.FC = () => {
         </table>
       </div>
 
-      {/* Call to Action */}
       <div className="text-center mt-6">
         <p className="text-xl">Vote for your favorite predictions and help decide the future of Chaos Coin! 🔮</p>
+      </div>
+
+      <div className="p-6 text-center bg-yellow-500 text-black font-bold mt-4">
+        <h3 className="text-3xl mb-4">🏆 Prediction of the Month 🏆</h3>
+        {localStorage.getItem('winner') ? (
+          <div>
+            <p className="text-xl">🎯 {JSON.parse(localStorage.getItem('winner')!).text}</p>
+            <p className="mt-2">👤 Winner: {JSON.parse(localStorage.getItem('winner')!).submittedBy}</p>
+          </div>
+        ) : (
+          <p className="text-xl">🤔 No winner announced yet. Keep voting!</p>
+        )}
       </div>
     </div>
   );

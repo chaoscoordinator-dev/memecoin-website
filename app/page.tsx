@@ -129,6 +129,7 @@ const Home: React.FC = () => {
         <Leaderboard />
       </div>
 
+      
       {/* Wallet Connection Section */}
       <div className="p-12 text-center bg-gray-700">
         <h2 className="text-5xl font-bold mb-6">💳 Connect Wallet</h2>
