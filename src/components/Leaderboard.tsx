@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Connection, PublicKey, clusterApiUrl, Transaction, SystemProgram, Keypair } from '@solana/web3.js';
 import CryptoJS from "crypto-js";
 import confetti from 'canvas-confetti';
-import './styles/animations.css';
+import '../styles/animations.css';
 
 interface Prediction {
   id: string;
