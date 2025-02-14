@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.0",
+    "canvas-confetti": "^1.9.3",
     "crypto-js": "^4.2.0",
     "next": "^15.1.7",
     "react": "^19.0.0",
