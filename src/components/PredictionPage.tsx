@@ -7,9 +7,11 @@ const PredictionPage: React.FC = () => {
   const [category, setCategory] = useState('MMA/UFC');
   const [account, setAccount] = useState('');
   const [balance, setBalance] = useState(0);
-  const [userPredictions, setUserPredictions] = useState<Record<string, string[]>>({}); // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [userPredictions, setUserPredictions] = useState<Record<string, string[]>>({});
   const [newPrediction, setNewPrediction] = useState('');
-  const [isEligible, setIsEligible] = useState(true); // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isEligible, setIsEligible] = useState(true); 
   
 
   const categories = [
