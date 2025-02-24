@@ -7,15 +7,16 @@ const PredictionPage: React.FC = () => {
   const [category, setCategory] = useState('MMA/UFC');
   const [account, setAccount] = useState('');
   const [balance, setBalance] = useState(0);
-  const [userPredictions, setUserPredictions] = useState<Record<string, string[]>>({});
+  const [userPredictions, setUserPredictions] = useState<Record<string, string[]>>({}); // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [newPrediction, setNewPrediction] = useState('');
-  const [isEligible, setIsEligible] = useState(true);
+  const [isEligible, setIsEligible] = useState(true); // eslint-disable-next-line @typescript-eslint/no-unused-vars
   
 
   const categories = [
     "MMA/UFC", "Football", "Music", "Film", "Crypto/Finance", "Gaming", "Tech", "Space Exploration", "Pop Culture", "Food", "F1"
   ];
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const CHAOS_TOKEN_MINT = "YourSolanaTokenMintAddress";
 
   const connectWallet = async () => {
