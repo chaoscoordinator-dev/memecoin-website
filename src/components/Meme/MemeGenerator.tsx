@@ -1,178 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { fetchImgflipTemplates, fetchMemegenTemplates, createMemeFromImgflip } from './MemeAPI';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-interface ImgflipTemplate {
+interface Meme {
   id: string;
   name: string;
   url: string;
 }
 
-interface MemegenTemplate {
-  id: string;
-  name: string;
-  blank: string;
-}
-
-interface MemeTemplate {
-  id: string;
-  name: string;
-  url: string;
+interface ApiResponse {
+  memes: Meme[];
 }
 
 const MemeGenerator: React.FC = () => {
-  const [templates, setTemplates] = useState<MemeTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
-  const [topText, setTopText] = useState('');
-  const [bottomText, setBottomText] = useState('');
-  const [generatedMeme, setGeneratedMeme] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const templatesPerPage = 10;
+  const [memes, setMemes] = useState<Meme[]>([]);
+  const [selectedMeme, setSelectedMeme] = useState<Meme | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [topText, setTopText] = useState<string>("");
+  const [bottomText, setBottomText] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const memesPerPage = 8; // Show 5 memes per page
 
   useEffect(() => {
-    const loadTemplates = async () => {
+    const fetchMemes = async () => {
       try {
-        const imgflipTemplates: ImgflipTemplate[] = await fetchImgflipTemplates();
-        const memegenTemplates: MemegenTemplate[] = await fetchMemegenTemplates();
-
-        const combinedTemplates: MemeTemplate[] = [
-          ...imgflipTemplates.map((template) => ({
-            id: `imgflip_${template.id}`, // ✅ Unique ID with prefix
-            name: template.name,
-            url: template.url
-          })),
-          ...memegenTemplates.map((template) => ({
-            id: `memegen_${template.id}`, // ✅ Unique ID with prefix
-            name: template.name,
-            url: template.blank
-          }))
-        ];
-
-        setTemplates(combinedTemplates);
-      } catch (error) {
-        console.error("Error loading meme templates:", error);
+        const response = await axios.get<ApiResponse>("/api/memes");
+        setMemes(response.data.memes);
+      } catch (err) {
+        console.error("Failed to fetch memes", err);
+        setError("Failed to load memes.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadTemplates();
+    fetchMemes();
   }, []);
 
-  const generateMeme = async () => {
-    if (selectedTemplate) {
-      const memeUrl = await createMemeFromImgflip(
-        selectedTemplate.id.replace("imgflip_", ""), // ✅ Remove prefix before sending request
-        topText,
-        bottomText,
-        process.env.REACT_APP_IMGFLIP_USERNAME!,
-        process.env.REACT_APP_IMGFLIP_PASSWORD!
-      );
-      setGeneratedMeme(memeUrl);
-    }
+  const handleMemeSelect = (meme: Meme) => {
+    setSelectedMeme(meme);
+    setTopText(""); // Reset text inputs
+    setBottomText("");
   };
 
-  const totalPages = Math.ceil(templates.length / templatesPerPage);
+  // Pagination Logic
+  const totalPages = Math.ceil(memes.length / memesPerPage);
+  const startIndex = (currentPage - 1) * memesPerPage;
+  const currentMemes = memes.slice(startIndex, startIndex + memesPerPage);
 
-  const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-    }
+  const goToNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
-  const getTemplatesForPage = () => {
-    const startIndex = (currentPage - 1) * templatesPerPage;
-    const endIndex = Math.min(startIndex + templatesPerPage, templates.length);
-    return templates.slice(startIndex, endIndex);
+  const goToPreviousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  const currentTemplates = getTemplatesForPage();
-
-  const templateImageStyle = {
-    width: '150px',
-    height: '150px',
-    marginRight: '8px',
-    border: '2px solid transparent',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  };
+  if (loading) return <p>Loading memes...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
-    <div className="p-6 bg-gray-800 text-white">
-      <h2 className="text-4xl font-bold mb-4">🎨 Meme Generator</h2>
-      <div className="flex overflow-x-auto h-40 border p-2 mb-4">
-        {currentTemplates.map((template) => (
-          <div key={template.id} style={templateImageStyle} className="shrink-0 relative">
-            <img
-              src={template.url}
-              alt={template.name}
-              className="hover:border-yellow-400 rounded absolute inset-0 w-full h-full object-cover"
-              onClick={() => setSelectedTemplate(template)}
+    <div>
+      <h2>Pick a Meme Template</h2>
+
+      {/* Meme Templates Container - Horizontal Scrollable Row */}
+      <div
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          gap: "10px",
+          whiteSpace: "nowrap",
+          paddingBottom: "10px",
+        }}
+      >
+        {currentMemes.map((meme) => (
+          <img
+            key={meme.id}
+            src={meme.url}
+            alt={meme.name}
+            width="150"
+            height="150"
+            style={{
+              cursor: "pointer",
+              border: selectedMeme?.id === meme.id ? "3px solid blue" : "none",
+              flexShrink: 0,
+            }}
+            onClick={() => handleMemeSelect(meme)}
+          />
+        ))}
+      </div>
+
+      {/* Pagination Controls */}
+      <div style={{ marginTop: "10px", textAlign: "center" }}>
+        <button
+          onClick={goToPreviousPage}
+          disabled={currentPage === 1}
+          style={{
+            marginRight: "10px",
+            padding: "5px 10px",
+            cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          }}
+        >
+          ◀ Previous
+        </button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button
+          onClick={goToNextPage}
+          disabled={currentPage === totalPages}
+          style={{
+            marginLeft: "10px",
+            padding: "5px 10px",
+            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+          }}
+        >
+          Next ▶
+        </button>
+      </div>
+
+      {/* Meme Customization Section */}
+      {selectedMeme && (
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <h3>Customize Your Meme</h3>
+          <img src={selectedMeme.url} alt="Selected Meme" width="300" />
+          <div>
+            <input
+              type="text"
+              placeholder="Top Text"
+              value={topText}
+              onChange={(e) => setTopText(e.target.value)}
+              style={{ margin: "10px", padding: "5px" }}
+            />
+            <input
+              type="text"
+              placeholder="Bottom Text"
+              value={bottomText}
+              onChange={(e) => setBottomText(e.target.value)}
+              style={{ margin: "10px", padding: "5px" }}
             />
           </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-l"
-        >
-          Previous
-        </button>
-
-        {Array.from({ length: totalPages }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => handlePageChange(i + 1)}
-            className={`py-2 px-4 border ${
-              currentPage === i + 1 ? 'bg-yellow-500 text-white' : 'text-gray-300 hover:bg-gray-700'
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-r"
-        >
-          Next
-        </button>
-      </div>
-
-      {selectedTemplate && (
-        <div className="mb-4">
-          <p className="font-semibold">Selected Template: {selectedTemplate.name}</p>
-          <img src={selectedTemplate.url} alt="Selected Meme" className="max-w-md mb-2" />
-        </div>
-      )}
-      <div className="flex gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Top Text"
-          value={topText}
-          onChange={(e) => setTopText(e.target.value)}
-          className="p-2 rounded text-black"
-        />
-        <input
-          type="text"
-          placeholder="Bottom Text"
-          value={bottomText}
-          onChange={(e) => setBottomText(e.target.value)}
-          className="p-2 rounded text-black"
-        />
-      </div>
-      <button
-        className="bg-green-500 px-4 py-2 rounded-lg hover:bg-green-400"
-        onClick={generateMeme}
-      >
-        🖼️ Generate Meme
-      </button>
-      {generatedMeme && (
-        <div className="mt-4">
-          <h3 className="text-2xl font-semibold mb-2">Your Meme:</h3>
-          <img src={generatedMeme} alt="Generated Meme" className="max-w-md border-2 border-yellow-300 rounded" />
         </div>
       )}
     </div>
