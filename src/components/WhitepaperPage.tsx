@@ -7,18 +7,22 @@ const WhitepaperPage: React.FC = () => {
 
         {/* Title */}
         <section className="mb-12 text-center">
-          <h1 className="text-6xl font-extrabold mb-10 animate-pulse">📄 The Meme Pit Whitepaper</h1>
+          <h1 className="text-4xl font-extrabold mb-10 animate-pulse animate-gradient bg-clip-text text-transparent"> 📄 The Meme Pit Whitepaper
+          </h1>
         </section>
 
         {/* Introduction */}
         <section className="mb-24">
           <h2 className="text-5xl font-bold mb-6">🔥 Introduction</h2>
-          <p className="text-lg leading-relaxed mb-8">
-            Memes are the heartbeat of degeneracy, and in the world of <span className="text-purple-400">$SendIt</span>, we don’t just share memes—we live and breathe them. Welcome to The Meme Pit, a chaotic, gamified meme ecosystem where degeneracy, creativity, and competition collide. This isn’t just a feature—it’s the next evolution of meme culture, built for true degens who understand that memes aren’t just jokes—they’re currency.
+          <p className="text-xl max-w-2xl mx-auto">
+            <strong>Memes</strong> are the <strong>heartbeat of degeneracy</strong>, and in the world of $SendIt, we don’t just share <strong>memes</strong>—we <strong>live and breathe them</strong>. Welcome to <strong>The Meme Pit</strong>, a <strong>chaotic, gamified meme ecosystem</strong> where <strong>degeneracy, creativity, and competition collide</strong>. This isn’t just a feature—it’s the <strong>next evolution of meme culture</strong>, built for true <strong>degens</strong> who understand that <strong>memes</strong> aren’t just jokes—they’re <strong>currency</strong>.  
           </p>
+          <p className="text-xl max-w-2xl mx-auto mt-4">
+            In <strong>The Meme Pit</strong>, your <strong>meme-making skills</strong> aren’t just for <strong>clout</strong>—they’re for <strong>glory</strong>. <strong>Token-gated leaderboards, upvote battles, and NFT minting</strong> turn every <strong>meme</strong> into a <strong>high-stakes play</strong>. The <strong>best memes</strong> rise to the top, <strong>earning rewards</strong>, while <strong>weak memes</strong> get buried in the <strong>abyss</strong>. <strong>Think you’ve got what it takes to dominate the memeverse? Send it.</strong> 🚀  
+         </p>
         </section>
 
-        {/* Core Features */}
+        {/* Core Features */} 
         <section className="mb-24">
           <h2 className="text-5xl font-bold mb-6">🚀 Core Features</h2>
           <div className="ml-6">
@@ -165,20 +169,6 @@ const WhitepaperPage: React.FC = () => {
           <p className="text-lg leading-relaxed mb-8">
             If you’ve made it this far, you’re either a true degen or you’ve accidentally stumbled into something you don’t understand—but now can’t ignore. Either way, The Meme Pit is here, and it’s about to change everything. Degens, prepare for battle. Now go send it. 🚀🔥
           </p>
-        </section>
-
-        {/* Join The Meme Revolution */}
-        <section className="text-center">
-          <h2 className="text-5xl font-bold mb-6">📢 Join The Meme Revolution</h2>
-          <p className="text-lg leading-relaxed mb-8">
-            Be part of the internet’s greatest meme movement. Follow us, vote, create, and own the meme economy.
-          </p>
-          <div className="flex justify-center gap-6">
-            <a href="#" className="text-blue-400 hover:text-blue-300 text-4xl">🐦 Twitter</a>
-            <a href="#" className="text-pink-500 hover:text-pink-400 text-4xl">💬 Telegram</a>
-            <a href="#" className="text-purple-400 hover:text-purple-300 text-4xl">📸 Instagram</a>
-            <a href="#" className="text-green-400 hover:text-green-300 text-4xl">🌐 Discord</a>
-          </div>
         </section>
 
       </div>

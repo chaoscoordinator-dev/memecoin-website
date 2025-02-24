@@ -13,17 +13,14 @@ const App: React.FC = () => {
       <div className="flex justify-center">
         <Header />
       </div>
-
-      <div className="bg-gradient-to-r from-purple-700 via-red-600 to-black p-4"> {/* Gradient background container */}
-        <nav className="text-center flex justify-center"> {/* Center the nav items */}
-          <div className="flex justify-around w-full"> {/* Distribute space within full width */}
-            <Link to="/" className="hover:text-yellow-400 text-xl font-bold text-white">🏠 Home</Link>
-            <Link to="/predictions" className="hover:text-green-300 text-xl font-bold text-white">🔮 Predictions</Link>
-            <Link to="/whitepaper" className="hover:text-blue-300 text-xl font-bold text-white">📄 Whitepaper</Link>
-            <Link to="/memes" className="hover:text-pink-300 text-xl font-bold text-white">🤣 Meme Zone</Link>
-          </div>
-        </nav>
-      </div>
+      <nav className="text-center flex justify-center py-4"> {/* Centers the nav items and adds vertical padding */}
+  <div className="flex gap-x-12"> {/* Adds spacing between links */}
+    <Link to="/" className="hover:text-yellow-400 text-xl font-bold text-white">🏠 Home  </Link>
+    <Link to="/predictions" className="hover:text-green-300 text-xl font-bold text-white">🔮 Predictions  </Link>
+    <Link to="/memes" className="hover:text-pink-300 text-xl font-bold text-white">🤣 The Meme Pit  </Link>
+    <Link to="/whitepaper" className="hover:text-blue-300 text-xl font-bold text-white">📄 Whitepaper  </Link>
+  </div>
+</nav>
 
       <main className="min-h-screen bg-gray-900 text-white">
         <Routes>

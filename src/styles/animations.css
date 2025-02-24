@@ -10,3 +10,36 @@
     animation: wiggle 1s infinite;
     display: inline-block;
   }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    background-image: linear-gradient(90deg, #8B5CF6, #EC4899, #FACC15); /* Purple -> Pink -> Yellow */
+    animation: gradientShift 3s ease infinite;
+  }
+  
+  @keyframes pulseEffect {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+  
+  .animate-pulse {
+    animation: pulseEffect 1.5s infinite;
+  }
